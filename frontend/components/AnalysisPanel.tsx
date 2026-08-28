@@ -153,8 +153,8 @@ export function AnalysisPanel({ study, onError }: AnalysisPanelProps) {
         <div className="mt-6 rounded-md border border-line bg-cream/40 px-4 py-3 text-sm text-muted">
           <p className="mb-2 font-medium text-navy">Strumień postępu</p>
           <ul className="space-y-1">
-            {events.map((event) => (
-              <li key={event}>{event}</li>
+            {events.map((event, index) => (
+              <li key={`${index}-${event}`}>{event}</li>
             ))}
           </ul>
         </div>

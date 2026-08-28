@@ -169,6 +169,20 @@ def stream_graph_updates(
             yield {"node": node_name, "update": update}
 
 
+def update_field_names(update: Any) -> list[str]:
+    """Extract state field names from a node update payload.
+
+    Args:
+        update: Value returned by a graph node (usually a dict).
+
+    Returns:
+        Field names when ``update`` is a mapping, otherwise an empty list.
+    """
+    if isinstance(update, dict):
+        return [str(key) for key in update]
+    return []
+
+
 def run_main_path(
     session: Session,
     study_id: UUID,

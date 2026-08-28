@@ -1,6 +1,7 @@
 """Analysis run endpoints: start, list, resume, and SSE progress."""
 
 import json
+import logging
 from collections.abc import Iterator
 from typing import Annotated
 from uuid import UUID
@@ -25,11 +26,14 @@ from qualiagent.graph.run import (
     initial_agent_state,
     resume_analysis_run,
     stream_graph_updates,
+    update_field_names,
 )
 from qualiagent.ingest.embedding import EmbeddingClient
 from qualiagent.language_model import LanguageModelClient
 from qualiagent.models import AnalysisRun as AnalysisRunModel
 from qualiagent.schemas import AnalysisEvent, AnalysisResumeRequest, AnalysisRun, AnalysisRunDetail
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["analysis"])
 
@@ -115,6 +119,12 @@ def start_analysis_run(
             session.refresh(analysis_run)
             return analysis_run_detail(session, analysis_run, state=final_state)
         except Exception as error:
+            logger.exception(
+                "Analysis run failed for study %s run %s: %s",
+                study_id,
+                analysis_run.id,
+                error,
+            )
             mark_analysis_run_status(session, analysis_run.id, "failed", error=str(error))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -155,6 +165,11 @@ def resume_analysis_run_endpoint(
         except ValueError as error:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
         except Exception as error:
+            logger.exception(
+                "Analysis resume failed for run %s: %s",
+                analysis_run_id,
+                error,
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=str(error),
@@ -192,7 +207,10 @@ def stream_analysis_run(
             yield _sse({"type": "run", "analysis_run_id": str(analysis_run.id)})
             try:
                 for event in stream_graph_updates(graph, state, config):
-                    payload = AnalysisEvent(node=event["node"], keys=list(event["update"].keys()))
+                    payload = AnalysisEvent(
+                        node=event["node"],
+                        keys=update_field_names(event["update"]),
+                    )
                     yield _sse({"type": "node", **payload.model_dump()})
                 status_name = apply_run_status_from_graph(session, analysis_run.id, graph, config)
                 session.commit()
@@ -206,6 +224,11 @@ def stream_analysis_run(
                     }
                 )
             except Exception as error:
+                logger.exception(
+                    "Analysis stream failed for run %s: %s",
+                    analysis_run.id,
+                    error,
+                )
                 mark_analysis_run_status(session, analysis_run.id, "failed", error=str(error))
                 session.commit()
                 yield _sse({"type": "error", "detail": str(error)})

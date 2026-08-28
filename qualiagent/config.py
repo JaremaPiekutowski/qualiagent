@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     database_url: str
     voyage_api_key: str
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-sonnet-4-20250514"
+    anthropic_model: str = "claude-haiku-4-5-20251001"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
     chunk_size_characters: int = 1200
