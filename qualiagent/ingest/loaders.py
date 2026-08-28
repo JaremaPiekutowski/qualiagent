@@ -8,6 +8,8 @@ from pdfminer.high_level import extract_text
 from qualiagent.schemas import SourceKind
 
 SUPPORTED_TEXT_KINDS: frozenset[SourceKind] = frozenset({"pdf", "docx", "txt"})
+SUPPORTED_MEDIA_KINDS: frozenset[SourceKind] = frozenset({"audio", "video"})
+SUPPORTED_SOURCE_KINDS: frozenset[SourceKind] = SUPPORTED_TEXT_KINDS | SUPPORTED_MEDIA_KINDS
 
 
 class UnsupportedSourceKindError(ValueError):

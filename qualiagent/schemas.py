@@ -107,6 +107,19 @@ class Chunk(BaseModel):
     speaker: str | None = None
 
 
+class RetrievedChunk(BaseModel):
+    """Chunk returned by hybrid retrieval with source metadata and RRF score."""
+
+    chunk_id: UUID
+    source_id: UUID
+    source_code: str
+    respondent_label: str | None
+    text: str
+    position: int
+    speaker: str | None
+    score: float
+
+
 class AnalysisRun(BaseModel):
     """Status and identifiers of one analysis execution."""
 
@@ -136,6 +149,17 @@ class Citation(BaseModel):
     verification_note: str | None = None
 
 
+class DraftCitation(BaseModel):
+    """Citation parsed from a draft before it is persisted."""
+
+    marker: str
+    source_id: UUID
+    chunk_id: UUID
+    quoted_text: str
+    verified: bool = False
+    verification_note: str | None = None
+
+
 class Section(BaseModel):
     """Written answer for one research question, with citations."""
 
@@ -151,3 +175,71 @@ class Section(BaseModel):
     respondents_covered: int
     respondents_total: int
     citations: list[Citation] = Field(default_factory=list)
+
+
+class DraftSection(BaseModel):
+    """Section payload produced by the graph before database ids exist."""
+
+    research_question: str
+    position: int
+    body: str
+    coverage: CoverageVerdict
+    coverage_note: str
+    respondents_covered: int
+    respondents_total: int
+    citations: list[DraftCitation] = Field(default_factory=list)
+
+
+class RetrievedChunkSummary(BaseModel):
+    """Compact retrieved chunk for HITL preview."""
+
+    chunk_id: UUID
+    source_code: str
+    respondent_label: str | None
+    position: int
+    text_preview: str
+    score: float
+
+
+class AnalysisApprovalPreview(BaseModel):
+    """State shown to the researcher before the write node."""
+
+    research_question: str
+    subqueries: list[str]
+    coverage: CoverageVerdict | None
+    coverage_note: str
+    respondents_covered: int
+    respondents_total: int
+    missing_dimensions: list[str]
+    retrieved: dict[str, list[RetrievedChunkSummary]]
+
+
+class AnalysisRunDetail(BaseModel):
+    """Analysis run with optional HITL preview and section count."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    study_id: UUID
+    thread_id: str
+    status: AnalysisRunStatus
+    created_at: datetime
+    finished_at: datetime | None = None
+    error: str | None = None
+    section_count: int = 0
+    report_path: str | None = None
+    approval_preview: AnalysisApprovalPreview | None = None
+
+
+class AnalysisResumeRequest(BaseModel):
+    """Resume payload after interrupt_before write."""
+
+    action: Literal["approve", "revise"] = "approve"
+    subqueries: list[str] | None = None
+
+
+class AnalysisEvent(BaseModel):
+    """One streamed graph progress event."""
+
+    node: str
+    keys: list[str] = Field(default_factory=list)

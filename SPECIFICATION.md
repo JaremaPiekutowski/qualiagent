@@ -410,3 +410,4 @@ Jeśli uznasz, że któraś z tych rzeczy jest niezbędna do działania — powi
 ---
 
 Będę to chciał postawić na VM Google'a na k8s. Ale to później.
+Oraz dodać SQLAdmin.

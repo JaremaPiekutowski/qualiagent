@@ -11,7 +11,15 @@ from qualiagent.config import Settings, get_settings
 from qualiagent.console_logging import configure_console_logging
 from qualiagent.ingest.chunking import chunk_text
 from qualiagent.ingest.embedding import EmbeddingClient, VoyageEmbeddingClient, embed_texts
-from qualiagent.ingest.loaders import detect_source_kind, load_text_from_path
+from qualiagent.ingest.loaders import (
+    SUPPORTED_MEDIA_KINDS,
+    detect_source_kind,
+    load_text_from_path,
+)
+from qualiagent.ingest.transcription import (
+    GeminiTranscriptionClient,
+    TranscriptionClient,
+)
 from qualiagent.models import Chunk, Source, Study
 
 logger = logging.getLogger(__name__)
@@ -46,6 +54,7 @@ def ingest_source(
     respondent_label: str | None = None,
     settings: Settings | None = None,
     embedding_client: EmbeddingClient | None = None,
+    transcription_client: TranscriptionClient | None = None,
 ) -> Source:
     """Ingest one file into a study as an indexed source with chunks.
 
@@ -56,6 +65,7 @@ def ingest_source(
         respondent_label: Optional respondent label for the source.
         settings: Optional settings override.
         embedding_client: Optional embedding client override for tests.
+        transcription_client: Optional transcription client for audio/video.
 
     Returns:
         Persisted ``Source`` with status ``indexed``.
@@ -94,8 +104,16 @@ def ingest_source(
     session.flush()
 
     try:
-        logger.info("[%s] Extracting text from %s", source_code, kind.upper())
-        raw_text = load_text_from_path(file_path, kind=kind)
+        if kind in SUPPORTED_MEDIA_KINDS:
+            source.status = "transcribing"
+            session.flush()
+            logger.info("[%s] Transcribing %s", source_code, kind)
+            media_client = transcription_client or GeminiTranscriptionClient(resolved_settings)
+            raw_text = media_client.transcribe(file_path)
+        else:
+            logger.info("[%s] Extracting text from %s", source_code, kind.upper())
+            raw_text = load_text_from_path(file_path, kind=kind)
+
         source.raw_text = raw_text
         logger.info("[%s] Extracted %s characters", source_code, len(raw_text))
 
@@ -112,9 +130,9 @@ def ingest_source(
         )
         logger.info("[%s] Created %s chunks", source_code, len(chunk_texts))
 
-        client = embedding_client or VoyageEmbeddingClient(resolved_settings)
+        embed_client = embedding_client or VoyageEmbeddingClient(resolved_settings)
         logger.info("[%s] Embedding %s chunks", source_code, len(chunk_texts))
-        embeddings = embed_texts(chunk_texts, client=client)
+        embeddings = embed_texts(chunk_texts, client=embed_client)
 
         if len(embeddings) != len(chunk_texts):
             raise RuntimeError("Embedding count does not match chunk count")

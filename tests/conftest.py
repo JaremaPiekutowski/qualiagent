@@ -1,6 +1,7 @@
 """Shared pytest fixtures."""
 
 from collections.abc import Callable, Generator
+from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine
@@ -27,7 +28,7 @@ def session() -> Generator[Session]:
 
 
 @pytest.fixture
-def settings() -> Settings:
+def settings(tmp_path: Path) -> Settings:
     """Return test settings without reading Voyage from the environment."""
     return Settings(
         database_url="postgresql+psycopg://unused:unused@127.0.0.1:5432/unused",
@@ -35,6 +36,9 @@ def settings() -> Settings:
         chunk_size_characters=200,
         chunk_overlap_characters=40,
         voyage_embedding_dimensions=1024,
+        reports_directory=str(tmp_path / "reports"),
+        interrupt_before_write=False,
+        use_postgres_checkpointer=False,
     )
 
 

@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #0b2d72;
+  --blue: #0992c2;
+  --cyan: #0ac4e0;
+  --cream: #f6e7bc;
+  --background: #ffffff;
+  --surface: #ffffff;
+  --foreground: #0b2d72;
+  --muted: #4a6a9a;
+  --line: #d7e8f2;
+  --accent: #0992c2;
+  --accent-soft: #e8f8fc;
+  --highlight: #f6e7bc;
+  --warning: #b8860b;
+  --danger: #b42318;
+  --shadow: 0 12px 32px rgba(11, 45, 114, 0.08);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-highlight: var(--highlight);
+  --color-navy: var(--navy);
+  --color-blue: var(--blue);
+  --color-cyan: var(--cyan);
+  --color-cream: var(--cream);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-body);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}

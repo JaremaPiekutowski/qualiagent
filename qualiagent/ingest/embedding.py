@@ -1,4 +1,4 @@
-"""Document embedding clients and helpers."""
+"""Document and query embedding clients."""
 
 import logging
 from typing import Protocol, cast
@@ -24,9 +24,20 @@ class EmbeddingClient(Protocol):
         """
         ...
 
+    def embed_query(self, text: str) -> list[float]:
+        """Embed a single search query.
+
+        Args:
+            text: Query text.
+
+        Returns:
+            Query embedding vector.
+        """
+        ...
+
 
 class VoyageEmbeddingClient:
-    """Voyage AI client used for document embeddings."""
+    """Voyage AI client used for document and query embeddings."""
 
     def __init__(self, settings: Settings | None = None) -> None:
         """Create a Voyage client.
@@ -69,6 +80,23 @@ class VoyageEmbeddingClient:
             )
             embeddings.extend(cast(list[list[float]], result.embeddings))
         return embeddings
+
+    def embed_query(self, text: str) -> list[float]:
+        """Embed one query with Voyage ``input_type=query``.
+
+        Args:
+            text: Query text.
+
+        Returns:
+            Query embedding vector.
+        """
+        result = self.client.embed(
+            [text],
+            model=self.settings.voyage_model,
+            input_type="query",
+        )
+        embeddings = cast(list[list[float]], result.embeddings)
+        return embeddings[0]
 
 
 def embed_texts(

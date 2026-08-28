@@ -1,0 +1,54 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: qualiagent
+          POSTGRES_PASSWORD: qualiagent
+          POSTGRES_DB: qualiagent
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qualiagent -d qualiagent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+psycopg://qualiagent:qualiagent@127.0.0.1:5432/qualiagent
+      VOYAGE_API_KEY: test-key-not-used
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Ruff
+        run: |
+          uv run ruff check qualiagent tests
+          uv run ruff format --check qualiagent tests
+
+      - name: Mypy
+        run: uv run mypy qualiagent
+
+      - name: Apply migrations
+        run: uv run alembic upgrade head
+
+      - name: Pytest
+        run: uv run pytest tests/ -q

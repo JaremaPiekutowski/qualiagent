@@ -1,8 +1,11 @@
 """Deterministic embedding client for tests."""
 
+import math
+import re
+
 
 class StubEmbeddingClient:
-    """Return fixed-size fake embeddings without calling Voyage."""
+    """Build content-based fake embeddings without calling Voyage."""
 
     def __init__(self, dimensions: int = 1024) -> None:
         """Store embedding width.
@@ -13,7 +16,7 @@ class StubEmbeddingClient:
         self.dimensions = dimensions
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
-        """Build deterministic vectors for each text.
+        """Embed documents with a deterministic bag-of-tokens vector.
 
         Args:
             texts: Input documents.
@@ -21,10 +24,26 @@ class StubEmbeddingClient:
         Returns:
             One vector per text.
         """
-        embeddings: list[list[float]] = []
-        for index, text in enumerate(texts):
-            vector = [0.0] * self.dimensions
-            vector[0] = float(index + 1)
-            vector[1] = float(len(text))
-            embeddings.append(vector)
-        return embeddings
+        return [self.embed_query(text) for text in texts]
+
+    def embed_query(self, text: str) -> list[float]:
+        """Embed a query with the same scheme as documents.
+
+        Args:
+            text: Query text.
+
+        Returns:
+            Normalized embedding vector.
+        """
+        vector = [0.0] * self.dimensions
+        tokens = re.findall(r"\w+", text.lower(), flags=re.UNICODE)
+        if not tokens:
+            vector[0] = 1.0
+            return vector
+
+        for token in tokens:
+            index = hash(token) % self.dimensions
+            vector[index] += 1.0
+
+        norm = math.sqrt(sum(value * value for value in vector)) or 1.0
+        return [value / norm for value in vector]

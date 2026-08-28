@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from qualiagent.database import SessionLocal
 from qualiagent.ingest.embedding import EmbeddingClient, VoyageEmbeddingClient
+from qualiagent.language_model import AnthropicLanguageModelClient, LanguageModelClient
 
 
 def get_db() -> Generator[Session]:
@@ -34,3 +35,12 @@ def get_embedding_client() -> EmbeddingClient:
         Client used when ingesting uploaded sources.
     """
     return VoyageEmbeddingClient()
+
+
+def get_language_model() -> LanguageModelClient:
+    """Return the default Anthropic language model client.
+
+    Returns:
+        Client used by analysis graph nodes.
+    """
+    return AnthropicLanguageModelClient()
